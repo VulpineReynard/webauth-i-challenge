@@ -33,4 +33,21 @@ server.post('/api/register', (req, res) => {
     });
 })
 
+server.post('/api/login', (req, res) => {
+  let { username, password } = req.body;
+
+  Users.findBy({ username })
+    .first()
+    .then(user => {
+      if (!user || !bcrypt.compareSync(password, user.password)) {
+        return res.status(401).json({ error: 'Incorrect credentials' });
+      } else {
+        res.status(201).json({ message: `Welcome ${username}.` })
+      }
+    })
+    .catch(error => {
+      res.status(500).json(error);
+    });
+});
+
 module.exports = server;
