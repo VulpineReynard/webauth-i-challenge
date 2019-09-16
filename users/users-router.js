@@ -1,0 +1,1 @@
+const restricted = require('./auth/restricted.js');
