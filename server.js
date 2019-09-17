@@ -5,35 +5,56 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const userRouter = require('./users/users-router.js');
 const Users = require('./users/users-model.js');
-const session = require('express-session');
-const KnexSessionStore= require('connect-session-knex')(session); // gotcha
+// const session = require('express-session');
+const sessions = require('client-sessions');
+const KnexSessionStore= require('connect-session-knex')(sessions); // gotcha
 const dbConnection = require('./data/db-config.js');
 
-
-const sessionConfig = {
-  name: 'chocochip', // would name the cooke sid by default
-  secret: process.env.SESSION_SECRET || 'keep it secret, keep it safe',
+const sessionsConfig = {
+  cookieName: 'testCookie', // cookie name dictates the key name added to the request object
+  secret: 'blargadeeblargblarg', // should be a large unguessable string
+  duration: 1000 * 60 * 60, // how long the session will stay valid in ms
+  activeDuration: 1000 * 60 * 60, // if expiresIn < activeDuration, the session will be extended by activeDuration milliseconds
+  store: new KnexSessionStore({ // always call a NEW KnexSessionStore
+        knex: dbConnection,
+        tablename: 'knexsessions',
+        sidfieldname: 'sessionId',
+        createtable: true,
+        clearInterval: 1000 * 60 * 30 // clean out expired session data
+      }),
   cookie: {
-    maxAge: 1000 * 60 * 60, // in milliseconds
-    secure: false, // true means only send cookie over https
-    httpOnly: true, // true means JS has no access to the cookie
-  },
-  resave: false,
-  saveUninitialized: true, // GDPR compliance
-  store: new KnexSessionStore({// always call a NEW KnexSessionStore
-    knex: dbConnection,
-    tablename: 'knexsessions',
-    sidfieldname: 'sessionId',
-    createtable: true,
-    clearInterval: 1000 * 60 * 30 // clean out expired session data
-  }),
-};
+    path: '/', // cookie will only be sent to requests under '/'
+    maxAge: 60000, // duration of the cookie in milliseconds, defaults to duration above
+    ephemeral: false, // when true, cookie expires when the browser closes
+    httpOnly: true, // when true, cookie is not accessible from javascript
+    secure: false // when true, cookie will only be sent over SSL. use key 'secureProxy' instead if you handle SSL not in your node process
+  }
+}
+
+// const sessionConfig = {
+//   name: 'chocochip', // would name the cooke sid by default
+//   secret: process.env.SESSION_SECRET || 'keep it secret, keep it safe',
+//   cookie: {
+//     maxAge: 1000 * 60 * 60, // in milliseconds
+//     secure: false, // true means only send cookie over https
+//     httpOnly: true, // true means JS has no access to the cookie
+//   },
+//   resave: false,
+//   saveUninitialized: true, // GDPR compliance
+//   store: new KnexSessionStore({// always call a NEW KnexSessionStore
+//     knex: dbConnection,
+//     tablename: 'knexsessions',
+//     sidfieldname: 'sessionId',
+//     createtable: true,
+//     clearInterval: 1000 * 60 * 30 // clean out expired session data
+//   }),
+// };
 
 // GLOBAL MIDDLEWARE
 server.use(helmet());
 server.use(cors());
 server.use(express.json());
-server.use(session(sessionConfig));
+server.use(sessions(sessionsConfig));
 
 // ROUTERS
 server.use('/api/users', userRouter);

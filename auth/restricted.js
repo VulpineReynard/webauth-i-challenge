@@ -28,9 +28,13 @@
 module.exports = (req, res, next) => {
   // is the user logged in === do we have information about the user in our session
   console.log(req.session.user)
-  if (req.session && req.session.user) {
+  if (req.testCookie.seenyou) {
+    res.setHeader({ 
+      username: req.session.user.username, 
+      password: req.session.use.password 
+    })
     next();
   } else {
-    res.status(401).json({ message: "You shall not pass!!!" })
+    res.status(401).json({ message: 'You shall not pass.' })
   }
 }
